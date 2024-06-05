@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ESP32 Bluetooth Provisioning</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+    <h1>Provision Bluetooth MAC Address</h1>
+    <form id="macForm">
+        MAC Address: <input type="text" id="macAddress"><br>
+        <input type="submit" value="Submit">
+    </form>
+
+    <button id="connect">Connect to ESP32</button>
+
+    <script>
+        let device;
+        let characteristic;
+
+        document.getElementById('connect').addEventListener('click', async () => {
+            try {
+                device = await navigator.bluetooth.requestDevice({
+                    filters: [{ services: ['battery_service'] }]
+                });
+
+                const server = await device.gatt.connect();
+                const service = await server.getPrimaryService('battery_service');
+                characteristic = await service.getCharacteristic('battery_level');
+                console.log('Connected to ESP32');
+                alert('Connected to ESP32');
+            } catch (error) {
+                console.error('Error connecting to ESP32', error);
+            }
+        });
+
+        document.getElementById('macForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const macAddress = document.getElementById('macAddress').value;
+            if (device && macAddress && characteristic) {
+                try {
+                    const encoder = new TextEncoder();
+                    await characteristic.writeValue(encoder.encode(`SETMAC ${macAddress}\n`));
+                    console.log('MAC Address set to:', macAddress);
+                    alert(`MAC Address set to: ${macAddress}`);
+                } catch (error) {
+                    console.error('Error setting MAC Address', error);
+                }
+            } else {
+                alert('Please connect to ESP32 first and enter a valid MAC Address');
+            }
+        });
+    </script>
+</body>
+</html>
